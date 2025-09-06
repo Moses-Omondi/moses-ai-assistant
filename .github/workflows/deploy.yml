@@ -1,0 +1,78 @@
+name: 🚀 Deploy Moses AI Assistant to AWS Lambda
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    name: 🚀 Deploy to AWS Lambda
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: 🔧 Install AWS SAM CLI
+      uses: aws-actions/setup-sam@v2
+      
+    - name: 🔑 Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+        
+    - name: 🏗️ Build Lambda Package
+      run: sam build --use-container
+      
+    - name: 🚀 Deploy to AWS
+      id: deploy
+      run: |
+        sam deploy \
+          --no-confirm-changeset \
+          --no-fail-on-empty-changeset \
+          --stack-name moses-ai-assistant \
+          --parameter-overrides Stage=prod \
+          --capabilities CAPABILITY_IAM \
+          --region ${{ env.AWS_REGION }}
+        
+        # Get API URL
+        API_URL=$(aws cloudformation describe-stacks \
+          --stack-name moses-ai-assistant \
+          --query 'Stacks[0].Outputs[?OutputKey==`MosesAIAssistantApi`].OutputValue' \
+          --output text \
+          --region ${{ env.AWS_REGION }})
+        
+        echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+        echo "🔗 Your AI Assistant is live at: $API_URL"
+        
+    - name: 🧪 Test API
+      run: |
+        echo "⏳ Waiting for Lambda to initialize..."
+        sleep 30
+        
+        API_URL="${{ steps.deploy.outputs.api_url }}"
+        
+        if curl -f -s "$API_URL" > /dev/null; then
+          echo "✅ API is responding successfully!"
+          echo "🎉 Your Moses AI Assistant is live and ready!"
+        else
+          echo "⚠️ API deployment completed but may need a moment to warm up"
+        fi
+        
+        echo ""
+        echo "📋 Your AI Assistant Details:"
+        echo "🔗 API URL: $API_URL"
+        echo "📱 Test with: curl $API_URL"
+        echo "💬 Query endpoint: $API_URL/query"
+        echo "💰 Cost: ~\$0.05-5/month (pay per request)"

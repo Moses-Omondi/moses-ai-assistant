@@ -15,7 +15,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 import chromadb
 from langchain_community.embeddings import HuggingFaceEmbeddings
-import ollama
+# Note: Ollama not available in Lambda - using fallback response system
 import json
 
 # Set up logging
@@ -132,39 +132,82 @@ IMPORTANT:
     
     def generate_response(self, query: str, context: str) -> str:
         """
-        Generate response using Ollama with the retrieved context
+        Generate response based on retrieved context (Lambda-compatible version)
         """
-        logger.info("Generating response with Ollama...")
+        logger.info("Generating response from knowledge base...")
         
-        # Construct the full prompt
-        full_prompt = f"""{self.system_prompt}
-
-{context}
-
-USER QUESTION: {query}
-
-Please provide a comprehensive answer based on Moses's expertise and the knowledge provided above. Focus on practical, security-conscious solutions."""
-
         try:
-            # Call Ollama API
-            response = ollama.generate(
-                model=self.model_name,
-                prompt=full_prompt,
-                options={
-                    'temperature': 0.7,  # Balanced creativity vs consistency
-                    'top_p': 0.9,
-                    'max_tokens': 1000,  # Reasonable response length
-                    'stop': ['USER QUESTION:', 'RELEVANT KNOWLEDGE:']
-                }
-            )
+            # Extract the most relevant information from context
+            if "No relevant context" in context:
+                return "I don't have specific information about that topic in Moses Omondi's knowledge base. Please try a more specific question about DevSecOps, CI/CD security, AWS, Kubernetes, or AI/ML engineering."
             
-            answer = response['response'].strip()
-            logger.info(f"Generated response ({len(answer)} characters)")
-            return answer
+            # Create a structured response based on the context
+            response = f"""Based on Moses Omondi's expertise, here's what I can tell you about your question: "{query}"
+
+**Key Information:**
+{self._extract_key_points(context)}
+
+**Practical Recommendations:**
+{self._generate_recommendations(query, context)}
+
+**Security Considerations:**
+{self._extract_security_points(context)}
+
+*This response is based on Moses Omondi's documented experience in DevSecOps, AI Engineering, and Cloud Architecture.*
+"""
+            
+            logger.info(f"Generated response ({len(response)} characters)")
+            return response.strip()
             
         except Exception as e:
             logger.error(f"Error generating response: {e}")
-            return f"I apologize, but I encountered an error generating a response. Please ensure Ollama is running with the {self.model_name} model. Error: {str(e)}"
+            return f"I apologize, but I encountered an error processing your question. Please try rephrasing your query. Error: {str(e)}"
+    
+    def _extract_key_points(self, context: str) -> str:
+        """Extract key points from the context"""
+        lines = context.split('\\n')
+        key_points = []
+        
+        for line in lines:
+            if line.strip() and not line.startswith('RELEVANT KNOWLEDGE') and not line.startswith('[Source'):
+                # Take first few sentences that contain useful information
+                if any(keyword in line.lower() for keyword in ['security', 'implement', 'deploy', 'configure', 'best practice']):
+                    key_points.append(f"• {line.strip()[:200]}")
+                    if len(key_points) >= 3:
+                        break
+        
+        return '\n'.join(key_points) if key_points else "• Relevant technical documentation and implementation guides available"
+    
+    def _generate_recommendations(self, query: str, context: str) -> str:
+        """Generate practical recommendations based on query and context"""
+        query_lower = query.lower()
+        
+        if 'kubernetes' in query_lower or 'k8s' in query_lower:
+            return "• Implement RBAC and network policies\n• Use Pod Security Standards\n• Regular security scanning of container images\n• Monitor cluster activity with audit logging"
+        elif 'ci/cd' in query_lower or 'pipeline' in query_lower:
+            return "• Integrate SAST/DAST tools in pipeline\n• Use secure secrets management\n• Implement branch protection rules\n• Automated security testing at each stage"
+        elif 'aws' in query_lower or 'cloud' in query_lower:
+            return "• Follow AWS Well-Architected Security Pillar\n• Implement least privilege IAM policies\n• Enable CloudTrail and GuardDuty\n• Use AWS Config for compliance monitoring"
+        elif 'ai' in query_lower or 'ml' in query_lower or 'model' in query_lower:
+            return "• Implement MLSecOps practices\n• Secure model training pipelines\n• Monitor for model drift and bias\n• Protect sensitive training data"
+        else:
+            return "• Follow security-first development practices\n• Implement proper monitoring and logging\n• Regular security assessments and updates\n• Documentation and knowledge sharing"
+    
+    def _extract_security_points(self, context: str) -> str:
+        """Extract security-related points from context"""
+        security_keywords = ['security', 'secure', 'vulnerability', 'threat', 'risk', 'compliance', 'audit']
+        lines = context.split('\\n')
+        security_points = []
+        
+        for line in lines:
+            if any(keyword in line.lower() for keyword in security_keywords):
+                clean_line = line.strip()
+                if clean_line and not clean_line.startswith('[Source'):
+                    security_points.append(f"• {clean_line[:150]}")
+                    if len(security_points) >= 2:
+                        break
+        
+        return '\n'.join(security_points) if security_points else "• Always prioritize security in implementation\n• Regular security reviews and updates recommended"
     
     def query(self, question: str, n_contexts: int = 5) -> Dict[str, Any]:
         """
