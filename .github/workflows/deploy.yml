@@ -25,6 +25,23 @@ jobs:
     - name: 🔧 Install AWS SAM CLI
       uses: aws-actions/setup-sam@v2
       
+    - name: 🔍 Debug Secrets
+      run: |
+        echo "Checking if secrets exist..."
+        if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+          echo "❌ AWS_ACCESS_KEY_ID secret is missing!"
+          exit 1
+        else
+          echo "✅ AWS_ACCESS_KEY_ID secret exists"
+        fi
+        
+        if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+          echo "❌ AWS_SECRET_ACCESS_KEY secret is missing!"
+          exit 1
+        else
+          echo "✅ AWS_SECRET_ACCESS_KEY secret exists"
+        fi
+        
     - name: 🔑 Configure AWS Credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
