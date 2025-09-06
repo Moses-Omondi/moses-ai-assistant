@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Moses Omondi AI Assistant - Serverless FastAPI deployment
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment stage
+  
+  OpenAIApiKey:
+    Type: String
+    NoEcho: true
+    Description: OpenAI API Key for the assistant
+    Default: ''
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 1024
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        OPENAI_API_KEY: !Ref OpenAIApiKey
+
+Resources:
+  MosesAIAssistantFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.api_service.handler
+      Runtime: python3.11
+      Architectures:
+        - x86_64
+      MemorySize: 2048
+      Timeout: 300
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          OPENAI_API_KEY: !Ref OpenAIApiKey
+          PYTHONPATH: /var/task
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MosesAIAssistantApi
+            Path: /{proxy+}
+            Method: ANY
+        RootApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref MosesAIAssistantApi
+            Path: /
+            Method: ANY
+      Tags:
+        Project: MosesAIAssistant
+        Owner: Moses-Omondi
+        Environment: !Ref Stage
+
+  MosesAIAssistantApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseTemplates:
+            "application/json": '{"message": $context.error.messageString}'
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        DEFAULT_5xx:
+          ResponseTemplates:
+            "application/json": '{"message": "Internal server error"}'
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+
+Outputs:
+  MosesAIAssistantApi:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${MosesAIAssistantApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+    Export:
+      Name: !Sub "${AWS::StackName}-api-url"
+  
+  MosesAIAssistantFunction:
+    Description: "Lambda Function ARN"
+    Value: !GetAtt MosesAIAssistantFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-function-arn"
+      
+  ApiId:
+    Description: "API Gateway ID"
+    Value: !Ref MosesAIAssistantApi
+    Export:
+      Name: !Sub "${AWS::StackName}-api-id"
