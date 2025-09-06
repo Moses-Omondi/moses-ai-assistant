@@ -1,21 +1,4 @@
-# Core RAG and LLM dependencies
-langchain
-langchain-community
-chromadb
-sentence-transformers
-
-# API and Lambda deployment
+# Minimal Lambda dependencies
 fastapi==0.104.1
 mangum==0.17.0
-
-# Document processing
-PyPDF2
-python-docx
-markdown
-beautifulsoup4
-
-# Data processing and utilities
-pandas
-numpy
-requests
-python-dotenv
+pydantic==2.4.2

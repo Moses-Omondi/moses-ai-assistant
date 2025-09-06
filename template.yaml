@@ -23,7 +23,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: .
-      Handler: src.api_service.handler
+      Handler: src.simple_api.handler
       Runtime: python3.11
       Architectures:
         - x86_64
