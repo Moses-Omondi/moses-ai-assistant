@@ -61,7 +61,8 @@ jobs:
           --stack-name moses-ai-assistant \
           --parameter-overrides Stage=prod \
           --capabilities CAPABILITY_IAM \
-          --region ${{ env.AWS_REGION }}
+          --region ${{ env.AWS_REGION }} \
+          --resolve-s3
         
         # Get API URL
         API_URL=$(aws cloudformation describe-stacks \
