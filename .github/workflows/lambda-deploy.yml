@@ -195,7 +195,7 @@ jobs:
       run: |
         sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
           --stack-name moses-ai-assistant-staging \
-          --parameter-overrides Stage=staging OpenAIApiKey="${{ secrets.OPENAI_API_KEY }}" \
+          --parameter-overrides Stage=staging \
           --capabilities CAPABILITY_IAM \
           --region ${{ env.AWS_REGION }} \
           --no-disable-rollback
@@ -265,7 +265,7 @@ jobs:
       run: |
         sam deploy --no-confirm-changeset --no-fail-on-empty-changeset \
           --stack-name moses-ai-assistant-prod \
-          --parameter-overrides Stage=prod OpenAIApiKey="${{ secrets.OPENAI_API_KEY }}" \
+          --parameter-overrides Stage=prod \
           --capabilities CAPABILITY_IAM \
           --region ${{ env.AWS_REGION }} \
           --no-disable-rollback

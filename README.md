@@ -17,8 +17,7 @@ sam deploy --guided
 
 ## Required GitHub Secrets
 - `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY` 
-- `OPENAI_API_KEY`
+- `AWS_SECRET_ACCESS_KEY`
 
 ## API Endpoints
 - `GET /` - API info

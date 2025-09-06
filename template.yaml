@@ -9,12 +9,6 @@ Parameters:
     Default: dev
     AllowedValues: [dev, staging, prod]
     Description: Deployment stage
-  
-  OpenAIApiKey:
-    Type: String
-    NoEcho: true
-    Description: OpenAI API Key for the assistant
-    Default: ''
 
 Globals:
   Function:
@@ -23,7 +17,6 @@ Globals:
     Environment:
       Variables:
         STAGE: !Ref Stage
-        OPENAI_API_KEY: !Ref OpenAIApiKey
 
 Resources:
   MosesAIAssistantFunction:
@@ -39,7 +32,6 @@ Resources:
       Environment:
         Variables:
           STAGE: !Ref Stage
-          OPENAI_API_KEY: !Ref OpenAIApiKey
           PYTHONPATH: /var/task
       Events:
         ApiEvent:
